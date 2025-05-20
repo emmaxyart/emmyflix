@@ -53,8 +53,8 @@ export default function SearchPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen pt-20 px-4 space-y-8 bg-gradient-to-b from-gray-900 to-black">
-        <div className="max-w-2xl mx-auto">
+      <main className="min-h-screen bg-gradient-to-b from-gray-900 to-black">
+        <div className="max-w-2xl mx-auto pt-8">
           <input
             type="search"
             placeholder="Search movies..."
@@ -89,3 +89,4 @@ export default function SearchPage() {
     </>
   );
 }
+

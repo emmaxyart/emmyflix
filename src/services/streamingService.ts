@@ -1,21 +1,32 @@
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis';
 import { prismaClient } from '@/lib/prisma';
+// Remove direct AWS SDK import
 
 // Initialize Redis for rate limiting
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_URL!,
-  token: process.env.UPSTASH_REDIS_TOKEN!,
-});
+const redis = (() => {
+  const url = process.env.UPSTASH_REDIS_URL;
+  const token = process.env.UPSTASH_REDIS_TOKEN;
+
+  if (!url || !url.startsWith('https://selected-hen-13529.upstash.io')) {
+    throw new Error('Invalid UPSTASH_REDIS_URL. Must be a valid HTTPS URL');
+  }
+
+  if (!token) {
+    throw new Error('UPSTASH_REDIS_TOKEN is not configured');
+  }
+
+  return new Redis({
+    url,
+    token,
+  });
+})();
 
 // Configure rate limiters
 const streamLimiter = new Ratelimit({
-  redis: {
-    client: redis,
-    limiter: Ratelimit.slidingWindow(10),
-  },
-  interval: "minute",
-  fireImmediately: true,
+  redis,
+  limiter: Ratelimit.slidingWindow(10, "60 s"),
+  analytics: true,
 });
 
 interface StreamingOptions {
@@ -32,6 +43,15 @@ export class StreamingService {
       this.instance = new StreamingService();
     }
     return this.instance;
+  }
+
+  private async loadAWS() {
+    // Dynamic import AWS SDK only on server side
+    if (typeof window === 'undefined') {
+      const AWS = await import('aws-sdk');
+      return AWS;
+    }
+    throw new Error('AWS SDK can only be used on the server side');
   }
 
   async generateStreamUrl(movieId: string, userId: string, options: StreamingOptions = {}) {
@@ -80,44 +100,81 @@ export class StreamingService {
   }
 
   private async getSignedStreamUrl(movieId: string, options: StreamingOptions) {
-    // Implement your streaming provider logic here
-    // Example using AWS CloudFront:
-    const AWS = require('aws-sdk');
-    const cloudFront = new AWS.CloudFront.Signer(
-      process.env.CLOUDFRONT_KEY_PAIR_ID!,
-      process.env.CLOUDFRONT_PRIVATE_KEY!
-    );
+    try {
+      const AWS = await this.loadAWS();
+      const cloudFront = new AWS.CloudFront.Signer(
+        process.env.CLOUDFRONT_KEY_PAIR_ID!,
+        process.env.CLOUDFRONT_PRIVATE_KEY!
+      );
 
-    const url = `https://${process.env.CLOUDFRONT_DOMAIN}/movies/${movieId}/manifest.m3u8`;
-    const signedUrl = cloudFront.getSignedUrl({
-      url,
-      expires: Math.floor((Date.now() + 2 * 60 * 60 * 1000) / 1000), // 2 hours
-    });
+      const url = `https://${process.env.CLOUDFRONT_DOMAIN}/movies/${movieId}/manifest.m3u8`;
+      const signedUrl = cloudFront.getSignedUrl({
+        url,
+        expires: Math.floor((Date.now() + 2 * 60 * 60 * 1000) / 1000), // 2 hours
+      });
 
-    return signedUrl;
+      return signedUrl;
+    } catch (error) {
+      console.error('Error generating signed stream URL:', error);
+      throw new Error('Failed to generate streaming URL');
+    }
   }
 
   private async getSignedDownloadUrl(movieId: string) {
-    // Implement your storage provider logic here
-    // Example using AWS S3:
-    const AWS = require('aws-sdk');
-    const s3 = new AWS.S3();
+    try {
+      const AWS = await this.loadAWS();
+      const s3 = new AWS.S3();
 
-    const url = s3.getSignedUrl('getObject', {
-      Bucket: process.env.S3_BUCKET_NAME,
-      Key: `movies/${movieId}/full.mp4`,
-      Expires: 3600, // 1 hour
-    });
+      const url = s3.getSignedUrl('getObject', {
+        Bucket: process.env.S3_BUCKET_NAME,
+        Key: `movies/${movieId}/full.mp4`,
+        Expires: 3600, // 1 hour
+      });
 
-    return url;
+      return url;
+    } catch (error) {
+      console.error('Error generating signed download URL:', error);
+      throw new Error('Failed to generate download URL');
+    }
   }
 
   private async checkDownloadPermissions(userId: string) {
-    // Implement your permission logic here
-    const userSubscription = await prismaClient.subscription.findFirst({
-      where: { userId, status: 'active' }
-    });
-    return userSubscription?.allowDownloads ?? false;
+    try {
+      // Check if user has an active subscription
+      const userSubscription = await prismaClient.subscription.findFirst({
+        where: { 
+          userId,
+          status: 'active',
+          allowDownloads: true
+        }
+      });
+
+      if (!userSubscription) {
+        throw new Error('Your subscription does not include downloads');
+      }
+
+      // Check download limits
+      const today = new Date();
+      const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+      
+      const downloadCount = await prismaClient.downloadActivity.count({
+        where: {
+          userId,
+          timestamp: {
+            gte: startOfDay
+          }
+        }
+      });
+
+      if (downloadCount >= 5) {  // Using a hardcoded default limit of 5
+        throw new Error('Daily download limit reached');
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Download permission check failed:', error);
+      throw error;
+    }
   }
 
   private async logStreamingActivity(userId: string, movieId: string) {
@@ -140,6 +197,15 @@ export class StreamingService {
     });
   }
 }
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1,23 +1,22 @@
 import { ReactNode } from "react";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export interface Movie {
-  key: any;
+   
+  adult: any;
+  overview: ReactNode;
+  backdrop_path: any;
   id: number;
   title: string;
-  overview: string;
-  poster_path: string | null;
-  backdrop_path: string | null;
-  vote_average: number;
+  poster_path: string;
   release_date: string;
+  vote_average: number;
+  // ... any other properties you need
 }
 
 export interface MovieResponse {
-  release_date: string | number | Date;
-  vote_average: any;
-  overview: ReactNode;
-  backdrop_path: any;
-  title: string;
   results: Movie[];
-  page: number;
-  total_pages: number;
+  // ... any other properties from the API response
 }
+
+

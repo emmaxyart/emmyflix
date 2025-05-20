@@ -13,30 +13,41 @@ export default async function Home() {
 
     return (
       <>
+        <div className="noise" />
         <Header />
-        <main className="min-h-screen pt-20 px-4 space-y-12 bg-gradient-to-b from-gray-900 to-black">
-          <MovieSection title="Trending Now" movies={trending.results} showVideo={true} />
-          <MovieSection title="Popular Movies" movies={popular.results} showVideo={true} />
-          <MovieSection title="Top Rated" movies={topRated.results} showVideo={true} />
-          <MovieSection title="Upcoming" movies={upcoming.results} showVideo={false} />
-        </main>
-      </>
-    );
-  } catch (error) {
-    return (
-      <>
-        <Header />
-        <main className="min-h-screen pt-20 px-4">
-          <div className="max-w-4xl mx-auto p-4 bg-red-900/50 rounded-lg">
-            <h2 className="text-xl font-bold text-red-200">Error Loading Movies</h2>
-            <p className="text-red-200 mt-2">
-              {error instanceof Error ? error.message : 'An unexpected error occurred'}
-            </p>
+        <main className="min-h-screen bg-gradient-custom">
+          {/* Trending Section with Jumbotron styling */}
+          <div className="bg-gradient-to-b from-black/80 to-transparent py-16">
+            <div className="max-w-[1400px] mx-auto">
+              <MovieSection 
+                title="Trending Now" 
+                movies={trending.results} 
+                showVideo={true}
+                isTrending={true}
+              />
+            </div>
+          </div>
+
+          {/* Other Sections */}
+          <div className="max-w-[1400px] mx-auto space-y-16 pb-12 pt-12">
+            <MovieSection title="Popular Movies" movies={popular.results} showVideo={true} />
+            <MovieSection title="Top Rated" movies={topRated.results} showVideo={true} />
+            <MovieSection title="Upcoming" movies={upcoming.results} showVideo={false} />
           </div>
         </main>
       </>
     );
+  } catch (error) {
+    return <div>Error: {error instanceof Error ? error.message : 'Unknown error'}</div>;
   }
 }
+
+
+
+
+
+
+
+
 
 

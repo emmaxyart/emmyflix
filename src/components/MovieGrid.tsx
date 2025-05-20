@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Movie } from '@/types/movie';
 import { useSession } from 'next-auth/react';
+import { toast } from 'react-hot-toast';
 
 interface MovieGridProps {
   movies: Movie[];
@@ -45,15 +46,14 @@ export default function MovieGrid({ movies, showVideo = true }: MovieGridProps) 
     }
   };
 
-  const handleDownload = async (e: React.MouseEvent, movieId: string) => {
-    e.preventDefault();
+  const handleDownload = async (movieId: string) => {
     if (!session) {
-      window.location.href = '/api/auth/signin';
+      toast.error('Please sign in to download');
       return;
     }
 
-    setLoadingStates(prev => ({ ...prev, [`download_${movieId}`]: true }));
-    setErrorStates(prev => ({ ...prev, [`download_${movieId}`]: '' }));
+    const loadingKey = `download_${movieId}`;
+    setLoadingStates(prev => ({ ...prev, [loadingKey]: true }));
 
     try {
       const response = await fetch(`/api/download/${movieId}`);
@@ -63,14 +63,13 @@ export default function MovieGrid({ movies, showVideo = true }: MovieGridProps) 
         throw new Error(data.error);
       }
 
+      // Open download in new tab
       window.open(data.downloadUrl, '_blank');
-    } catch (error: any) {
-      setErrorStates(prev => ({ 
-        ...prev, 
-        [`download_${movieId}`]: error.message || 'Failed to start download'
-      }));
+      toast.success('Download started');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to start download');
     } finally {
-      setLoadingStates(prev => ({ ...prev, [`download_${movieId}`]: false }));
+      setLoadingStates(prev => ({ ...prev, [loadingKey]: false }));
     }
   };
 
@@ -117,7 +116,7 @@ export default function MovieGrid({ movies, showVideo = true }: MovieGridProps) 
                     ) : 'Stream'}
                   </button>
                   <button 
-                    onClick={(e) => handleDownload(e, movie.id.toString())}
+                    onClick={() => handleDownload(movie.id.toString())}
                     disabled={loadingStates[`download_${movie.id}`]}
                     className="bg-gray-700 text-white px-3 py-1 rounded text-sm hover:bg-gray-600 transition-colors flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -145,6 +144,7 @@ export default function MovieGrid({ movies, showVideo = true }: MovieGridProps) 
     </div>
   );
 }
+
 
 
 

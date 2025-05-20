@@ -10,10 +10,12 @@ export default async function MoviesPage() {
 
   return (
     <>
+      <div className="noise" />
       <Header />
-      <main className="min-h-screen pt-20 px-4 space-y-12 bg-gradient-to-b from-gray-900 to-black">
+      <main className="min-h-screen bg-gradient-custom">
         <MovieSection title="All Movies" movies={[...popular.results, ...topRated.results]} />
       </main>
     </>
   );
 }
+

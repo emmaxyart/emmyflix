@@ -1,1 +1,6 @@
+[Binary content - Create a 32x32 ICO file with the following SVG converted to ICO format]<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="4" fill="#dc2626"/>  <path d="M26 7H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4v2h8v-2h4c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm0 14H6V9h20v12z" fill="white"/>
+  <path d="M16 20c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0-6c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z" fill="white"/>
+
+
 [Binary file content - You'll need to create a 16x16 or 32x32 ICO file]
